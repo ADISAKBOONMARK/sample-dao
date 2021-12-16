@@ -1,0 +1,15 @@
+node_modules
+coverage
+.env
+coverage.json
+build
+yarn-error.log
+
+#Hardhat and plugin files
+cache
+artifacts
+.solcover.js
+
+temp
+scripts
+.vscode

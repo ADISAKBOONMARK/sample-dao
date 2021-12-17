@@ -19,7 +19,7 @@ describe("MyGovernor", async function () {
     await token.createSnapshot();
     await token.createSnapshot();
 
-    let snapshot = await token.snapshotList(0);
+    let snapshot = await token.getSnapshot(0);
 
     expect(snapshot.voteStart.toNumber() !== 0).to.equal(true);
     expect(snapshot.voteEnd.toNumber() !== 0).to.equal(true);
@@ -27,7 +27,7 @@ describe("MyGovernor", async function () {
     expect(snapshot.executed == false).to.equal(true);
     expect(snapshot.canceled == false).to.equal(true);
 
-    snapshot = await token.snapshotList(1);
+    snapshot = await token.getSnapshot(1);
 
     expect(snapshot.voteStart.toNumber() !== 0).to.equal(true);
     expect(snapshot.voteEnd.toNumber() !== 0).to.equal(true);
@@ -40,7 +40,7 @@ describe("MyGovernor", async function () {
     await token.addCandidate(0);
     await token.addCandidate(0);
 
-    let snapshot = await token.snapshotList(0);
+    let snapshot = await token.getSnapshot(0);
 
     expect(snapshot.voteStart.toNumber() !== 0).to.equal(true);
     expect(snapshot.voteEnd.toNumber() !== 0).to.equal(true);
@@ -51,7 +51,7 @@ describe("MyGovernor", async function () {
     await token.addCandidate(1);
     await token.addCandidate(1);
 
-    snapshot = await token.snapshotList(1);
+    snapshot = await token.getSnapshot(1);
 
     expect(snapshot.voteStart.toNumber() !== 0).to.equal(true);
     expect(snapshot.voteEnd.toNumber() !== 0).to.equal(true);
@@ -112,7 +112,7 @@ describe("MyGovernor", async function () {
 
   it("Can cancel a snapshot", async function () {
     await token.cancel(0);
-    const snapshot = await token.snapshotList(0);
+    const snapshot = await token.getSnapshot(0);
 
     expect(snapshot.canceled == true).to.equal(true);
   });
@@ -145,7 +145,7 @@ describe("MyGovernor", async function () {
 
   it("Can execute a snapshot", async function () {
     await token.execute(1);
-    const snapshot = await token.snapshotList(0);
+    const snapshot = await token.getSnapshot(0);
 
     expect(snapshot.canceled == true).to.equal(true);
   });

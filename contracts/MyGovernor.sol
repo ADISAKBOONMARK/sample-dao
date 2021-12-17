@@ -23,11 +23,30 @@ contract MyGovernor {
         mapping (uint256 => Candidate) candidateList;
     }
 
-    mapping(uint256 => Snapshot) public snapshotList;
+    struct Snap {
+        uint256 voteStart;
+        uint256 voteEnd;
+        uint256 lastCandidateIndex;
+        bool executed;
+        bool canceled;
+    }
+
+    mapping(uint256 => Snapshot) private snapshotList;
 
     uint256 private lastSnapshotIndex = 0;
 
     constructor(){}
+    
+    function getSnapshot(uint256 snapshotIndex) public view returns(Snap memory) {
+        Snap memory snap = Snap({
+            voteStart: snapshotList[snapshotIndex].voteStart,
+            voteEnd: snapshotList[snapshotIndex].voteEnd,
+            lastCandidateIndex: snapshotList[snapshotIndex].lastCandidateIndex,
+            executed: snapshotList[snapshotIndex].executed,
+            canceled: snapshotList[snapshotIndex].canceled
+        });
+        return snap;
+    }
 
     function isOpenVote(uint256 snapshotIndex) private view returns(bool result) {
         if(snapshotList[snapshotIndex].executed == false && snapshotList[snapshotIndex].canceled == false) {

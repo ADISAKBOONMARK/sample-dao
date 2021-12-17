@@ -5,12 +5,13 @@ const hre = require("hardhat");
 describe("MyGovernor", async function () {
   let accounts;
   let token;
-  
+  let ipfsUrl;
   before(async () => {
     const contract = await hre.ethers.getContractFactory("MyGovernor");
     const [accountA, accountB, accountC] = await hre.ethers.getSigners();
     accounts = [accountA, accountB, accountC];
     token = await contract.deploy();
+    ipfsUrl = "";
     await token.deployed();
   });
   
@@ -59,18 +60,41 @@ describe("MyGovernor", async function () {
     expect(snapshot.canceled == false).to.equal(true);
   });
 
+  it("Check my vote before doing", async function () {
+    const myVote = await await token.myVote(0);
+
+    expect(myVote.voted == false).to.equal(true);
+    expect(myVote.candidateIndex == 0).to.equal(true);
+  });
+
+  it("Check candidate report before voting", async function () {
+    const candidateReport = await await token.candidateReport(0,0);
+
+    expect(candidateReport.ipfsUrl == ipfsUrl).to.equal(true);
+    expect(candidateReport.countScore == 0).to.equal(true);
+  });
+
+  it("Check vote report before voting", async function () {
+    const voteReport = await await token.voteReport(0);
+
+    expect(voteReport[0].ipfsUrl == ipfsUrl).to.equal(true);
+    expect(voteReport[0].countScore == 0).to.equal(true);
+
+    expect(voteReport[1].ipfsUrl == ipfsUrl).to.equal(true);
+    expect(voteReport[1].countScore == 0).to.equal(true);
+  });
+
   it("Can vote", async function () {
     await token.vote(0, 0);
-    await token.myVoted(0);
     token = new ethers.Contract(
       token.address,
       token.interface,
       accounts[1]
     );
     await token.vote(0, 0)
-    const votedReport = await token.votedReport(0);
+    const voteReport = await token.voteReport(0);
 
-    expect(votedReport[0].countScore.toNumber() == 2).to.equal(true);
+    expect(voteReport[0].countScore.toNumber() == 2).to.equal(true);
   });
 
   it("Should not allow voting again", async function () {
@@ -150,5 +174,29 @@ describe("MyGovernor", async function () {
     }
 
     expect(allow == false).to.equal(true);
+  });
+
+  it("Check my vote after doing", async function () {
+    const myVote = await await token.myVote(0);
+
+    expect(myVote.voted == true).to.equal(true);
+    expect(myVote.candidateIndex == 0).to.equal(true);
+  });
+
+  it("Check candidate report after voting", async function () {
+    const candidateReport = await await token.candidateReport(0,0);
+
+    expect(candidateReport.ipfsUrl == ipfsUrl).to.equal(true);
+    expect(candidateReport.countScore == 2).to.equal(true);
+  });
+
+  it("Check vote report after voting", async function () {
+    const voteReport = await await token.voteReport(0);
+
+    expect(voteReport[0].ipfsUrl == ipfsUrl).to.equal(true);
+    expect(voteReport[0].countScore == 2).to.equal(true);
+
+    expect(voteReport[1].ipfsUrl == ipfsUrl).to.equal(true);
+    expect(voteReport[1].countScore == 0).to.equal(true);
   });
 });

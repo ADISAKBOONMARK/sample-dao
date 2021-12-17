@@ -10,7 +10,7 @@ contract MyGovernor {
 
     struct Governor {
         bool voted;
-        uint256 myVoted;
+        uint256 candidateIndex;
     }
 
     struct Snapshot {
@@ -57,7 +57,7 @@ contract MyGovernor {
         require(snapshotList[snapshotIndex].governorList[msg.sender].voted == false, "error");
 
         snapshotList[snapshotIndex].candidateList[candidateIndex].countScore++;
-        snapshotList[snapshotIndex].governorList[msg.sender].myVoted = candidateIndex;
+        snapshotList[snapshotIndex].governorList[msg.sender].candidateIndex = candidateIndex;
         snapshotList[snapshotIndex].governorList[msg.sender].voted = true;
     }
 
@@ -75,10 +75,10 @@ contract MyGovernor {
         snapshotList[snapshotIndex].canceled = true;
     }
 
-    function votedReport(uint256 snapshotIndex) public view returns(Candidate[] memory) {
+    function voteReport(uint256 snapshotIndex) public view returns(Candidate[] memory) {
         Candidate[] memory result = new Candidate[](snapshotList[snapshotIndex].lastCandidateIndex);
 
-        for(uint256 i=0; i < snapshotList[snapshotIndex].lastCandidateIndex; i++) {
+        for(uint256 i = 0; i < snapshotList[snapshotIndex].lastCandidateIndex; i++) {
             result[i] = snapshotList[snapshotIndex].candidateList[i];
         }
 
@@ -89,7 +89,7 @@ contract MyGovernor {
         return snapshotList[snapshotIndex].candidateList[candidateIndex];
     }
 
-    function myVoted(uint256 snapshotIndex) public view returns(Governor memory) {
+    function myVote(uint256 snapshotIndex) public view returns(Governor memory) {
         return snapshotList[snapshotIndex].governorList[msg.sender];
     }
 }

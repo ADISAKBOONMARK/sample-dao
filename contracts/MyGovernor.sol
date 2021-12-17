@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
+import "@openzeppelin/contracts/utils/Counters.sol";
+
 contract MyGovernor {
+    using Counters for Counters.Counter;
 
     struct Candidate {
         string ipfsUrl;
-        uint256 countScore;
+        Counters.Counter countScore;
     }
 
     struct Governor {
@@ -16,7 +19,7 @@ contract MyGovernor {
     struct Snapshot {
         uint256 voteStart;
         uint256 voteEnd;
-        uint256 lastCandidateIndex;
+        Counters.Counter lastCandidateIndex;
         bool executed;
         bool canceled;
         mapping (address => Governor) governorList;
@@ -33,7 +36,7 @@ contract MyGovernor {
 
     mapping(uint256 => Snapshot) private snapshotList;
 
-    uint256 private lastSnapshotIndex = 0;
+    Counters.Counter private lastSnapshotIndex;
 
     constructor(){}
     
@@ -41,7 +44,7 @@ contract MyGovernor {
         Snap memory snap = Snap({
             voteStart: snapshotList[snapshotIndex].voteStart,
             voteEnd: snapshotList[snapshotIndex].voteEnd,
-            lastCandidateIndex: snapshotList[snapshotIndex].lastCandidateIndex,
+            lastCandidateIndex: snapshotList[snapshotIndex].lastCandidateIndex.current(),
             executed: snapshotList[snapshotIndex].executed,
             canceled: snapshotList[snapshotIndex].canceled
         });
@@ -56,48 +59,48 @@ contract MyGovernor {
     }
 
     function createSnapshot() public {
-        snapshotList[lastSnapshotIndex].voteStart = block.timestamp;
-        snapshotList[lastSnapshotIndex].voteEnd = block.timestamp + 1 days;
-        lastSnapshotIndex++;
+        snapshotList[lastSnapshotIndex.current()].voteStart = block.timestamp;
+        snapshotList[lastSnapshotIndex.current()].voteEnd = block.timestamp + 1 days;
+        lastSnapshotIndex.increment();
     }
 
     function addCandidate(uint256 snapshotIndex) public {
-        require(snapshotIndex < lastSnapshotIndex, "error");
+        require(snapshotIndex < lastSnapshotIndex.current(), "error");
 
-        snapshotList[snapshotIndex].candidateList[snapshotList[snapshotIndex].lastCandidateIndex].ipfsUrl = "";
-        snapshotList[snapshotIndex].lastCandidateIndex++;
+        snapshotList[snapshotIndex].candidateList[snapshotList[snapshotIndex].lastCandidateIndex.current()].ipfsUrl = "";
+        snapshotList[snapshotIndex].lastCandidateIndex.increment();
     }
 
     function vote(uint256 snapshotIndex, uint256 candidateIndex) public {
         //TODO: This function should allow only members.
-        require(snapshotIndex < lastSnapshotIndex, "error");
-        require(candidateIndex < snapshotList[snapshotIndex].lastCandidateIndex, "error");
+        require(snapshotIndex < lastSnapshotIndex.current(), "error");
+        require(candidateIndex < snapshotList[snapshotIndex].lastCandidateIndex.current(), "error");
         require(isOpenVote(snapshotIndex), "error");
         require(snapshotList[snapshotIndex].governorList[msg.sender].voted == false, "error");
 
-        snapshotList[snapshotIndex].candidateList[candidateIndex].countScore++;
+        snapshotList[snapshotIndex].candidateList[candidateIndex].countScore.increment();
         snapshotList[snapshotIndex].governorList[msg.sender].candidateIndex = candidateIndex;
         snapshotList[snapshotIndex].governorList[msg.sender].voted = true;
     }
 
     function execute(uint256 snapshotIndex) public {
-        require(snapshotIndex < lastSnapshotIndex, "error");
+        require(snapshotIndex < lastSnapshotIndex.current(), "error");
         require(isOpenVote(snapshotIndex), "error");
 
         snapshotList[snapshotIndex].executed = true;
     }
 
     function cancel(uint256 snapshotIndex) public {
-        require(snapshotIndex < lastSnapshotIndex, "error");
+        require(snapshotIndex < lastSnapshotIndex.current(), "error");
         require(isOpenVote(snapshotIndex), "error");
 
         snapshotList[snapshotIndex].canceled = true;
     }
 
     function voteReport(uint256 snapshotIndex) public view returns(Candidate[] memory) {
-        Candidate[] memory result = new Candidate[](snapshotList[snapshotIndex].lastCandidateIndex);
+        Candidate[] memory result = new Candidate[](snapshotList[snapshotIndex].lastCandidateIndex.current());
 
-        for(uint256 i = 0; i < snapshotList[snapshotIndex].lastCandidateIndex; i++) {
+        for(uint256 i = 0; i < snapshotList[snapshotIndex].lastCandidateIndex.current(); i++) {
             result[i] = snapshotList[snapshotIndex].candidateList[i];
         }
 

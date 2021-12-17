@@ -21,17 +21,17 @@ describe("MyGovernor", async function () {
 
     let snapshot = await token.getSnapshot(0);
 
-    expect(snapshot.voteStart.toNumber() !== 0).to.equal(true);
-    expect(snapshot.voteEnd.toNumber() !== 0).to.equal(true);
-    expect(snapshot.lastCandidateIndex.toNumber() == 0).to.equal(true);
+    expect(snapshot.voteStart !== 0).to.equal(true);
+    expect(snapshot.voteEnd !== 0).to.equal(true);
+    expect(snapshot.lastCandidateIndex == 0).to.equal(true);
     expect(snapshot.executed == false).to.equal(true);
     expect(snapshot.canceled == false).to.equal(true);
 
     snapshot = await token.getSnapshot(1);
 
-    expect(snapshot.voteStart.toNumber() !== 0).to.equal(true);
-    expect(snapshot.voteEnd.toNumber() !== 0).to.equal(true);
-    expect(snapshot.lastCandidateIndex.toNumber() == 0).to.equal(true);
+    expect(snapshot.voteStart !== 0).to.equal(true);
+    expect(snapshot.voteEnd !== 0).to.equal(true);
+    expect(snapshot.lastCandidateIndex == 0).to.equal(true);
     expect(snapshot.executed == false).to.equal(true);
     expect(snapshot.canceled == false).to.equal(true);
   });
@@ -42,9 +42,9 @@ describe("MyGovernor", async function () {
 
     let snapshot = await token.getSnapshot(0);
 
-    expect(snapshot.voteStart.toNumber() !== 0).to.equal(true);
-    expect(snapshot.voteEnd.toNumber() !== 0).to.equal(true);
-    expect(snapshot.lastCandidateIndex.toNumber() == 2).to.equal(true);
+    expect(snapshot.voteStart !== 0).to.equal(true);
+    expect(snapshot.voteEnd !== 0).to.equal(true);
+    expect(snapshot.lastCandidateIndex == 2).to.equal(true);
     expect(snapshot.executed == false).to.equal(true);
     expect(snapshot.canceled == false).to.equal(true);
 
@@ -53,9 +53,9 @@ describe("MyGovernor", async function () {
 
     snapshot = await token.getSnapshot(1);
 
-    expect(snapshot.voteStart.toNumber() !== 0).to.equal(true);
-    expect(snapshot.voteEnd.toNumber() !== 0).to.equal(true);
-    expect(snapshot.lastCandidateIndex.toNumber() == 2).to.equal(true);
+    expect(snapshot.voteStart !== 0).to.equal(true);
+    expect(snapshot.voteEnd !== 0).to.equal(true);
+    expect(snapshot.lastCandidateIndex == 2).to.equal(true);
     expect(snapshot.executed == false).to.equal(true);
     expect(snapshot.canceled == false).to.equal(true);
   });
@@ -93,8 +93,7 @@ describe("MyGovernor", async function () {
     );
     await token.vote(0, 0)
     const voteReport = await token.voteReport(0);
-
-    expect(voteReport[0].countScore.toNumber() == 2).to.equal(true);
+    expect(voteReport[0].countScore == 2).to.equal(true);
   });
 
   it("Should not allow voting again", async function () {

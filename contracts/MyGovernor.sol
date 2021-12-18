@@ -4,6 +4,8 @@ pragma solidity ^0.8.2;
 import "@openzeppelin/contracts/utils/Counters.sol";
 
 contract MyGovernor {
+    //TODO: Handle error cases
+    // 50001: error description
     using Counters for Counters.Counter;
 
     struct Candidate {
@@ -20,7 +22,6 @@ contract MyGovernor {
         uint256 voteStart;
         uint256 voteEnd;
         Counters.Counter lastCandidateIndex;
-        bool executed;
         bool canceled;
         mapping (address => Governor) governorList;
         mapping (uint256 => Candidate) candidateList;
@@ -30,7 +31,6 @@ contract MyGovernor {
         uint256 voteStart;
         uint256 voteEnd;
         uint256 lastCandidateIndex;
-        bool executed;
         bool canceled;
     }
 
@@ -40,78 +40,97 @@ contract MyGovernor {
 
     constructor(){}
     
-    function getSnapshot(uint256 snapshotIndex) public view returns(Snap memory) {
+    function getSnapshot(uint256 _snapshotIndex) public view returns(Snap memory) {
         Snap memory snap = Snap({
-            voteStart: snapshotList[snapshotIndex].voteStart,
-            voteEnd: snapshotList[snapshotIndex].voteEnd,
-            lastCandidateIndex: snapshotList[snapshotIndex].lastCandidateIndex.current(),
-            executed: snapshotList[snapshotIndex].executed,
-            canceled: snapshotList[snapshotIndex].canceled
+            voteStart: snapshotList[_snapshotIndex].voteStart,
+            voteEnd: snapshotList[_snapshotIndex].voteEnd,
+            lastCandidateIndex: snapshotList[_snapshotIndex].lastCandidateIndex.current(),
+            canceled: snapshotList[_snapshotIndex].canceled
         });
         return snap;
     }
 
     function isOpenVote(uint256 snapshotIndex) private view returns(bool result) {
-        if(snapshotList[snapshotIndex].executed == false && snapshotList[snapshotIndex].canceled == false) {
+        if(snapshotList[snapshotIndex].voteStart <= block.timestamp && 
+        snapshotList[snapshotIndex].voteEnd > block.timestamp) {
             result = true;
         }
-        return result;
     }
 
-    function createSnapshot() public {
-        snapshotList[lastSnapshotIndex.current()].voteStart = block.timestamp;
-        snapshotList[lastSnapshotIndex.current()].voteEnd = block.timestamp + 1 days;
+    function isCancelVote(uint256 snapshotIndex) private view returns(bool result) {
+        result = snapshotList[snapshotIndex].canceled;
+    }
+
+    function isFoundSnapshot(uint256 snapshotIndex) private view returns(bool result) {
+        if(snapshotIndex < lastSnapshotIndex.current()) {
+            result = true;
+        }
+    }
+
+    function isFoundCandidate(uint256 snapshotIndex, uint256 candidateIndex) private view returns(bool result) {
+        if(candidateIndex < snapshotList[snapshotIndex].lastCandidateIndex.current()) {
+            result = true;
+        }
+    }
+
+    function isDuplicateVote(uint256 snapshotIndex, address sender) private view returns(bool result) {
+        result = snapshotList[snapshotIndex].governorList[sender].voted;
+    }
+
+    function createSnapshot(uint256 _voteStart, uint256 _voteEnd) public {
+        require(_voteStart >= block.timestamp, "50001");
+        require(_voteStart < _voteEnd, "50002");
+
+        snapshotList[lastSnapshotIndex.current()].voteStart = _voteStart;
+        snapshotList[lastSnapshotIndex.current()].voteEnd = _voteEnd;
         lastSnapshotIndex.increment();
     }
 
-    function addCandidate(uint256 snapshotIndex) public {
-        require(snapshotIndex < lastSnapshotIndex.current(), "error");
+    function addCandidate(uint256 _snapshotIndex, string memory _ipfsUrl) public {
+        require(isFoundSnapshot(_snapshotIndex), "50003");
+        require(!isOpenVote(_snapshotIndex), "50004");
+        require(!isCancelVote(_snapshotIndex), "50005");
 
-        snapshotList[snapshotIndex].candidateList[snapshotList[snapshotIndex].lastCandidateIndex.current()].ipfsUrl = "";
-        snapshotList[snapshotIndex].lastCandidateIndex.increment();
+        snapshotList[_snapshotIndex].candidateList[snapshotList[_snapshotIndex].lastCandidateIndex.current()].ipfsUrl = _ipfsUrl;
+        snapshotList[_snapshotIndex].lastCandidateIndex.increment();
     }
 
-    function vote(uint256 snapshotIndex, uint256 candidateIndex) public {
+    function vote(uint256 _snapshotIndex, uint256 _candidateIndex) public {
         //TODO: This function should allow only members.
-        require(snapshotIndex < lastSnapshotIndex.current(), "error");
-        require(candidateIndex < snapshotList[snapshotIndex].lastCandidateIndex.current(), "error");
-        require(isOpenVote(snapshotIndex), "error");
-        require(snapshotList[snapshotIndex].governorList[msg.sender].voted == false, "error");
+        require(isFoundSnapshot(_snapshotIndex), "50003");
+        require(isFoundCandidate(_snapshotIndex,_candidateIndex), "50006");
+        require(isOpenVote(_snapshotIndex), "50007");
+        require(!isCancelVote(_snapshotIndex), "50005");
+        require(!isDuplicateVote(_snapshotIndex, msg.sender), "50008");
 
-        snapshotList[snapshotIndex].candidateList[candidateIndex].countScore.increment();
-        snapshotList[snapshotIndex].governorList[msg.sender].candidateIndex = candidateIndex;
-        snapshotList[snapshotIndex].governorList[msg.sender].voted = true;
+        snapshotList[_snapshotIndex].candidateList[_candidateIndex].countScore.increment();
+        snapshotList[_snapshotIndex].governorList[msg.sender].candidateIndex = _candidateIndex;
+        snapshotList[_snapshotIndex].governorList[msg.sender].voted = true;
     }
 
-    function execute(uint256 snapshotIndex) public {
-        require(snapshotIndex < lastSnapshotIndex.current(), "error");
-        require(isOpenVote(snapshotIndex), "error");
+    function cancel(uint256 _snapshotIndex) public {
+        require(isFoundSnapshot(_snapshotIndex), "50003");
+        require(isOpenVote(_snapshotIndex), "50007");
+        require(!isCancelVote(_snapshotIndex), "50005");
 
-        snapshotList[snapshotIndex].executed = true;
+        snapshotList[_snapshotIndex].canceled = true;
     }
 
-    function cancel(uint256 snapshotIndex) public {
-        require(snapshotIndex < lastSnapshotIndex.current(), "error");
-        require(isOpenVote(snapshotIndex), "error");
+    function voteReport(uint256 _snapshotIndex) public view returns(Candidate[] memory) {
+        Candidate[] memory result = new Candidate[](snapshotList[_snapshotIndex].lastCandidateIndex.current());
 
-        snapshotList[snapshotIndex].canceled = true;
-    }
-
-    function voteReport(uint256 snapshotIndex) public view returns(Candidate[] memory) {
-        Candidate[] memory result = new Candidate[](snapshotList[snapshotIndex].lastCandidateIndex.current());
-
-        for(uint256 i = 0; i < snapshotList[snapshotIndex].lastCandidateIndex.current(); i++) {
-            result[i] = snapshotList[snapshotIndex].candidateList[i];
+        for(uint256 i = 0; i < snapshotList[_snapshotIndex].lastCandidateIndex.current(); i++) {
+            result[i] = snapshotList[_snapshotIndex].candidateList[i];
         }
 
         return result;
     }
 
-    function candidateReport(uint256 snapshotIndex, uint256 candidateIndex) public view returns(Candidate memory) {
-        return snapshotList[snapshotIndex].candidateList[candidateIndex];
+    function candidateReport(uint256 _snapshotIndex, uint256 _candidateIndex) public view returns(Candidate memory) {
+        return snapshotList[_snapshotIndex].candidateList[_candidateIndex];
     }
 
-    function myVote(uint256 snapshotIndex) public view returns(Governor memory) {
-        return snapshotList[snapshotIndex].governorList[msg.sender];
+    function myVote(uint256 _snapshotIndex) public view returns(Governor memory) {
+        return snapshotList[_snapshotIndex].governorList[msg.sender];
     }
 }

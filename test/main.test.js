@@ -133,8 +133,11 @@ describe("MyGovernor", async function () {
     expect(voteReport[1].countScore == 0).to.equal(true);
   });
 
-  it("Can vote", async function () {
+  it("Delay 10 sec before voting", async function () {
     await delay(10000);
+  });
+
+  it("Can vote", async function () {
     await accounts[0].vote(0, 0);
     await accounts[1].vote(0, 0);
     const voteReport = await token.voteReport(0);

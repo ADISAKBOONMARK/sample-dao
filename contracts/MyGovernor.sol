@@ -2,8 +2,9 @@
 pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract MyGovernor {
+contract MyGovernor is Ownable{
     //TODO: Handle error cases
     // 50001: error description
     using Counters for Counters.Counter;
@@ -77,7 +78,7 @@ contract MyGovernor {
         result = snapshotList[snapshotIndex].governorList[sender].voted;
     }
 
-    function createSnapshot(uint256 _voteStart, uint256 _voteEnd) public {
+    function createSnapshot(uint256 _voteStart, uint256 _voteEnd) public onlyOwner {
         require(_voteStart >= block.timestamp, "50001");
         require(_voteStart < _voteEnd, "50002");
 
@@ -86,7 +87,7 @@ contract MyGovernor {
         lastSnapshotIndex.increment();
     }
 
-    function addCandidate(uint256 _snapshotIndex, string memory _ipfsUrl) public {
+    function addCandidate(uint256 _snapshotIndex, string memory _ipfsUrl) public onlyOwner {
         require(isFoundSnapshot(_snapshotIndex), "50003");
         require(!isOpenVote(_snapshotIndex), "50004");
         require(!isCancelVote(_snapshotIndex), "50005");
@@ -108,7 +109,7 @@ contract MyGovernor {
         snapshotList[_snapshotIndex].governorList[msg.sender].voted = true;
     }
 
-    function cancel(uint256 _snapshotIndex) public {
+    function cancel(uint256 _snapshotIndex) public onlyOwner {
         require(isFoundSnapshot(_snapshotIndex), "50003");
         require(isOpenVote(_snapshotIndex), "50007");
         require(!isCancelVote(_snapshotIndex), "50005");

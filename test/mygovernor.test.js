@@ -19,8 +19,6 @@ describe("MyGovernor", async function () {
 
   before(async () => {
     const contract = await hre.ethers.getContractFactory("MyGovernor");
-    const [accountA, accountB, accountC] = await hre.ethers.getSigners();
-    accounts = [accountA, accountB, accountC];
     token = await contract.deploy();
     ipfsUrl = "";
 
@@ -36,20 +34,27 @@ describe("MyGovernor", async function () {
     voteEnd1 = Math.floor(time.getTime() / 1000.0);
 
     await token.deployed();
+
+    const [accountA, accountB, accountC] = await hre.ethers.getSigners();
+    accounts = [
+      new hre.ethers.Contract(token.address, token.interface, accountA), // Owner
+      new hre.ethers.Contract(token.address, token.interface, accountB),
+      new hre.ethers.Contract(token.address, token.interface, accountC),
+    ];
   });
 
   it("Can create a snapshot", async function () {
-    await token.createSnapshot(voteStart, voteEnd1);
-    await token.createSnapshot(voteStart, voteEnd2);
+    await accounts[0].createSnapshot(voteStart, voteEnd1);
+    await accounts[0].createSnapshot(voteStart, voteEnd2);
 
-    let snapshot = await token.getSnapshot(0);
+    let snapshot = await accounts[0].getSnapshot(0);
 
     expect(snapshot.voteStart == voteStart).to.equal(true);
     expect(snapshot.voteEnd == voteEnd1).to.equal(true);
     expect(snapshot.lastCandidateIndex == 0).to.equal(true);
     expect(snapshot.canceled == false).to.equal(true);
 
-    snapshot = await token.getSnapshot(1);
+    snapshot = await accounts[0].getSnapshot(1);
 
     expect(snapshot.voteStart == voteStart).to.equal(true);
     expect(snapshot.voteEnd == voteEnd2).to.equal(true);
@@ -57,47 +62,69 @@ describe("MyGovernor", async function () {
     expect(snapshot.canceled == false).to.equal(true);
   });
 
-  it("Can add a candidate", async function () {
-    await token.addCandidate(0, ipfsUrl);
-    await token.addCandidate(0, ipfsUrl);
+  it("Should allow only owner role to create a snapshot", async function () {
+    let allow = true;
 
-    let snapshot = await token.getSnapshot(0);
+    try {
+      await accounts[1].createSnapshot(0, 0);
+    } catch (err) {
+      allow = false;
+    }
+
+    expect(allow == false).to.equal(true);
+  });
+
+  it("Can add a candidate", async function () {
+    await accounts[0].addCandidate(0, ipfsUrl);
+    await accounts[0].addCandidate(0, ipfsUrl);
+
+    let snapshot = await accounts[0].getSnapshot(0);
 
     expect(snapshot.voteStart == voteStart).to.equal(true);
     expect(snapshot.voteEnd == voteEnd1).to.equal(true);
     expect(snapshot.lastCandidateIndex == 2).to.equal(true);
     expect(snapshot.canceled == false).to.equal(true);
 
-    await token.addCandidate(1, ipfsUrl);
-    await token.addCandidate(1, ipfsUrl);
-    await token.addCandidate(1, ipfsUrl);
+    await accounts[0].addCandidate(1, ipfsUrl);
+    await accounts[0].addCandidate(1, ipfsUrl);
+    await accounts[0].addCandidate(1, ipfsUrl);
 
-    snapshot = await token.getSnapshot(1);
+    snapshot = await accounts[0].getSnapshot(1);
 
     expect(snapshot.voteStart == voteStart).to.equal(true);
     expect(snapshot.voteEnd == voteEnd2).to.equal(true);
     expect(snapshot.lastCandidateIndex == 3).to.equal(true);
     expect(snapshot.canceled == false).to.equal(true);
+  });
 
-    await delay(10000);
+  it("Should allow only owner role to add a candidate", async function () {
+    let allow = true;
+
+    try {
+      await accounts[1].addCandidate(1, ipfsUrl);
+    } catch (err) {
+      allow = false;
+    }
+
+    expect(allow == false).to.equal(true);
   });
 
   it("Check my vote before doing", async function () {
-    const myVote = await await token.myVote(0);
+    const myVote = await await accounts[0].myVote(0);
 
     expect(myVote.voted == false).to.equal(true);
     expect(myVote.candidateIndex == 0).to.equal(true);
   });
 
   it("Check candidate report before voting", async function () {
-    const candidateReport = await await token.candidateReport(0, 0);
+    const candidateReport = await await accounts[0].candidateReport(0, 0);
 
     expect(candidateReport.ipfsUrl == ipfsUrl).to.equal(true);
     expect(candidateReport.countScore == 0).to.equal(true);
   });
 
   it("Check vote report before voting", async function () {
-    const voteReport = await await token.voteReport(0);
+    const voteReport = await await accounts[0].voteReport(0);
 
     expect(voteReport[0].ipfsUrl == ipfsUrl).to.equal(true);
     expect(voteReport[0].countScore == 0).to.equal(true);
@@ -107,13 +134,9 @@ describe("MyGovernor", async function () {
   });
 
   it("Can vote", async function () {
-    await token.vote(0, 0);
-    token = new hre.ethers.Contract(
-      token.address,
-      token.interface,
-      accounts[1]
-    );
-    await token.vote(0, 0);
+    await delay(10000);
+    await accounts[0].vote(0, 0);
+    await accounts[1].vote(0, 0);
     const voteReport = await token.voteReport(0);
     expect(voteReport[0].countScore == 2).to.equal(true);
   });
@@ -122,7 +145,7 @@ describe("MyGovernor", async function () {
     let allow = true;
 
     try {
-      await token.vote(0, 0);
+      await accounts[0].vote(0, 0);
     } catch (err) {
       allow = false;
     }
@@ -143,22 +166,29 @@ describe("MyGovernor", async function () {
   });
 
   it("Can cancel a snapshot", async function () {
-    await token.cancel(0);
+    await accounts[0].cancel(0);
     const snapshot = await token.getSnapshot(0);
 
     expect(snapshot.canceled == true).to.equal(true);
+  });
+
+  it("Should allow only owner role to cancel a snapshot", async function () {
+    let allow = true;
+
+    try {
+      await accounts[1].cancel(1);
+    } catch (err) {
+      allow = false;
+    }
+
+    expect(allow == false).to.equal(true);
   });
 
   it("Should not allow vote when canceled", async function () {
     let allow = true;
 
     try {
-      token = new hre.ethers.Contract(
-        token.address,
-        token.interface,
-        accounts[2]
-      );
-      await token.vote(0, 0);
+      await accounts[2].vote(0, 0);
     } catch (err) {
       allow = false;
     }
@@ -167,26 +197,21 @@ describe("MyGovernor", async function () {
   });
 
   it("Check my vote after doing", async function () {
-    token = new hre.ethers.Contract(
-      token.address,
-      token.interface,
-      accounts[0]
-    );
-    const myVote = await await token.myVote(0);
+    const myVote = await await accounts[0].myVote(0);
 
     expect(myVote.voted == true).to.equal(true);
     expect(myVote.candidateIndex == 0).to.equal(true);
   });
 
   it("Check candidate report after voting", async function () {
-    const candidateReport = await await token.candidateReport(0, 0);
+    const candidateReport = await await accounts[0].candidateReport(0, 0);
 
     expect(candidateReport.ipfsUrl == ipfsUrl).to.equal(true);
     expect(candidateReport.countScore == 2).to.equal(true);
   });
 
   it("Check vote report after voting", async function () {
-    const voteReport = await await token.voteReport(0);
+    const voteReport = await await accounts[0].voteReport(0);
 
     expect(voteReport[0].ipfsUrl == ipfsUrl).to.equal(true);
     expect(voteReport[0].countScore == 2).to.equal(true);

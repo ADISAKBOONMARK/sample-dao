@@ -5,6 +5,7 @@ module.exports = {
   decimals: null,
   hre: null,
   expect: null,
+  delay: null,
   accounts: {
     a: { MyGovernor: null },
     b: { MyGovernor: null },

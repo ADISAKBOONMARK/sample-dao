@@ -3,6 +3,12 @@ const setting = async function () {
   const hre = require("hardhat");
   const { expect } = require("chai");
 
+  const delay = function (ms) {
+    return new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    });
+  };
+
   const contracts = {};
   const MoveForward = await hre.ethers.getContractFactory("MoveForward");
   contracts.MoveForward = await MoveForward.deploy();
@@ -98,6 +104,7 @@ const setting = async function () {
     decimals,
     hre,
     expect,
+    delay,
     accounts,
     contracts,
     ipfsUrl,

@@ -166,6 +166,21 @@ describe("MoveForward", async function () {
       .to.equal(true, "001");
   });
 
+  it("Should allow only owner role to mint the token", async function () {
+    let allow = true;
+
+    try {
+      await config.accounts.b.MoveForward.mint(
+        config.accounts.b.address,
+        config.hre.ethers.utils.parseUnits("10", config.decimals)
+      );
+    } catch (err) {
+      allow = false;
+    }
+
+    config.expect(allow == false).to.equal(true, "001");
+  });
+
   it("Can burn token from another address", async function () {
     await config.accounts.a.MoveForward.burn(
       config.accounts.b.address,
@@ -179,6 +194,21 @@ describe("MoveForward", async function () {
     config
       .expect(config.hre.ethers.utils.formatEther(balance) == 10)
       .to.equal(true, "001");
+  });
+
+  it("Should allow only owner role to token the token", async function () {
+    let allow = true;
+
+    try {
+      await config.accounts.b.MoveForward.burn(
+        config.accounts.b.address,
+        config.hre.ethers.utils.parseUnits("10", config.decimals)
+      );
+    } catch (err) {
+      allow = false;
+    }
+
+    config.expect(allow == false).to.equal(true, "001");
   });
 
   it("Can pause", async function () {

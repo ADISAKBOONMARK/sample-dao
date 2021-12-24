@@ -171,12 +171,14 @@ describe("MyGovernor", async function () {
   });
 
   it("Delay x sec before an opening vote", async function () {
-    const checkAlready = setInterval(async function () {
+    let stop = false;
+    while (!stop) {
       const snapshot = await config.accounts.a.MyGovernor.getSnapshot(0);
       if (snapshot.voteStart == Math.floor(new Date().getTime() / 1000.0)) {
-        clearInterval(checkAlready);
+        stop = true;
       }
-    }, 1000);
+      config.delay(1000);
+    }
   });
 
   it("Can vote", async function () {

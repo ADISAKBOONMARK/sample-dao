@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract MoveForward is ERC20, Pausable, Ownable {
-    constructor() ERC20("MoveForward", "MFW") {
+    constructor() ERC20("Move Forward", "MFW") {
         _mint(msg.sender, 10000000 * 10 ** decimals());
     }
 

@@ -3,12 +3,6 @@ const setting = async function () {
   const hre = require("hardhat");
   const { expect } = require("chai");
 
-  const delay = function (ms) {
-    return new Promise((resolve) => {
-      setTimeout(resolve, ms);
-    });
-  };
-
   const contracts = {};
   const MoveForward = await hre.ethers.getContractFactory("MoveForward");
   contracts.MoveForward = await MoveForward.deploy();
@@ -18,7 +12,7 @@ const setting = async function () {
   const ipfsUrl = "";
 
   const time = new Date();
-  time.setSeconds(time.getSeconds() + 10);
+  time.setSeconds(time.getSeconds() + 20);
 
   const voteStart = Math.floor(time.getTime() / 1000.0);
   time.setSeconds(time.getSeconds() + 1);
@@ -39,6 +33,7 @@ const setting = async function () {
 
   const accounts = {
     a: {
+      address: accountA.address,
       MoveForward: new hre.ethers.Contract(
         contracts.MoveForward.address,
         contracts.MoveForward.interface,
@@ -51,6 +46,7 @@ const setting = async function () {
       ),
     },
     b: {
+      address: accountB.address,
       MoveForward: new hre.ethers.Contract(
         contracts.MoveForward.address,
         contracts.MoveForward.interface,
@@ -63,6 +59,7 @@ const setting = async function () {
       ),
     },
     c: {
+      address: accountC.address,
       MoveForward: new hre.ethers.Contract(
         contracts.MoveForward.address,
         contracts.MoveForward.interface,
@@ -75,6 +72,7 @@ const setting = async function () {
       ),
     },
     d: {
+      address: accountD.address,
       MoveForward: new hre.ethers.Contract(
         contracts.MoveForward.address,
         contracts.MoveForward.interface,
@@ -88,10 +86,18 @@ const setting = async function () {
     },
   };
 
+  const symbol = "MFW";
+  const name = "Move Forward";
+  const totalSupply = 10000000;
+  const decimals = 18;
+
   return {
+    symbol,
+    name,
+    totalSupply,
+    decimals,
     hre,
     expect,
-    delay,
     accounts,
     contracts,
     ipfsUrl,

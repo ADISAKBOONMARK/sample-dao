@@ -109,6 +109,34 @@ describe("MyGovernor", async function () {
     config.expect(allow == false).to.equal(true, "001");
   });
 
+  it("Can register", async function () {
+    await config.accounts.a.MyGovernor.register(1);
+    await config.accounts.b.MyGovernor.register(2);
+    await config.accounts.c.MyGovernor.register(1);
+    await config.accounts.d.MyGovernor.register(3);
+
+    const aLocation = await config.accounts.a.MyGovernor.myLocation();
+    const bLocation = await config.accounts.b.MyGovernor.myLocation();
+    const cLocation = await config.accounts.c.MyGovernor.myLocation();
+    const dLocation = await config.accounts.d.MyGovernor.myLocation();
+
+    config.expect(aLocation == config.location1).to.equal(true, "001");
+    config.expect(bLocation == config.location2).to.equal(true, "002");
+    config.expect(cLocation == config.location1).to.equal(true, "003");
+    config.expect(dLocation == config.location3).to.equal(true, "004");
+  });
+
+  it("Can set location", async function () {
+    await config.accounts.b.MyGovernor.setLocation(1);
+    await config.accounts.c.MyGovernor.setLocation(2);
+
+    const bLocation = await config.accounts.b.MyGovernor.myLocation();
+    const cLocation = await config.accounts.c.MyGovernor.myLocation();
+
+    config.expect(bLocation == config.location1).to.equal(true, "001");
+    config.expect(cLocation == config.location2).to.equal(true, "002");
+  });
+
   it("Check my vote before doing", async function () {
     const myVote = await config.accounts.a.MyGovernor.myVote(0);
 
@@ -142,36 +170,13 @@ describe("MyGovernor", async function () {
     config.expect(voteReport[1].countScore == 0).to.equal(true, "004");
   });
 
-  it("Delay 10 sec before voting", async function () {
-    await config.delay(10000);
-  });
-
-  it("Can register", async function () {
-    await config.accounts.a.MyGovernor.register(1);
-    await config.accounts.b.MyGovernor.register(2);
-    await config.accounts.c.MyGovernor.register(1);
-    await config.accounts.d.MyGovernor.register(3);
-
-    const aLocation = await config.accounts.a.MyGovernor.myLocation();
-    const bLocation = await config.accounts.b.MyGovernor.myLocation();
-    const cLocation = await config.accounts.c.MyGovernor.myLocation();
-    const dLocation = await config.accounts.d.MyGovernor.myLocation();
-
-    config.expect(aLocation == config.location1).to.equal(true, "001");
-    config.expect(bLocation == config.location2).to.equal(true, "002");
-    config.expect(cLocation == config.location1).to.equal(true, "003");
-    config.expect(dLocation == config.location3).to.equal(true, "004");
-  });
-
-  it("Can set location", async function () {
-    await config.accounts.b.MyGovernor.setLocation(1);
-    await config.accounts.c.MyGovernor.setLocation(2);
-
-    const bLocation = await config.accounts.b.MyGovernor.myLocation();
-    const cLocation = await config.accounts.c.MyGovernor.myLocation();
-
-    config.expect(bLocation == config.location1).to.equal(true, "001");
-    config.expect(cLocation == config.location2).to.equal(true, "002");
+  it("Delay x sec before an opening vote", async function () {
+    const checkAlready = setInterval(async function () {
+      const snapshot = await config.accounts.a.MyGovernor.getSnapshot(0);
+      if (snapshot.voteStart == Math.floor(new Date().getTime() / 1000.0)) {
+        clearInterval(checkAlready);
+      }
+    }, 1000);
   });
 
   it("Can vote", async function () {

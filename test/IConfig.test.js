@@ -1,7 +1,10 @@
 module.exports = {
+  symbol: null,
+  name: null,
+  totalSupply: null,
+  decimals: null,
   hre: null,
   expect: null,
-  delay: null,
   accounts: {
     a: { MyGovernor: null },
     b: { MyGovernor: null },

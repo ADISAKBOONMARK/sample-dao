@@ -6,7 +6,7 @@
   "scripts": {
     "clean": "npx hardhat clean && rm -rf cache coverage coverage.json",
     "compile": "npx hardhat compile",
-    "coverage": "npx hardhat coverage --testfiles ./test/integrate.test.coverage.js",
+    "coverage": "npx hardhat coverage --testfiles ./test/Main.test.js",
     "test": "npx hardhat test ./test/Main.test.js",
     "test:rpc": "npx hardhat node",
     "deploy:localhost": "npx hardhat run scripts/deploy.js --network localhost",

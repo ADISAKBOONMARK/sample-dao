@@ -196,7 +196,7 @@ describe("MoveForward", async function () {
       .to.equal(true, "001");
   });
 
-  it("Should allow only owner role to token the token", async function () {
+  it("Should allow only owner role to burn the token", async function () {
     let allow = true;
 
     try {
@@ -211,11 +211,35 @@ describe("MoveForward", async function () {
     config.expect(allow == false).to.equal(true, "001");
   });
 
+  it("Should allow only owner role to pause", async function () {
+    let allow = true;
+
+    try {
+      await config.accounts.b.MoveForward.pause();
+    } catch (err) {
+      allow = false;
+    }
+
+    config.expect(allow == false).to.equal(true, "001");
+  });
+
   it("Can pause", async function () {
     await config.accounts.a.MoveForward.pause();
     const pause = await config.accounts.a.MoveForward.paused();
 
     config.expect(pause == true).to.equal(true, "001");
+  });
+
+  it("Should allow only owner role to unpause", async function () {
+    let allow = true;
+
+    try {
+      await config.accounts.b.MoveForward.unpause();
+    } catch (err) {
+      allow = false;
+    }
+
+    config.expect(allow == false).to.equal(true, "001");
   });
 
   it("Can unpause", async function () {

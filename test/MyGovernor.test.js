@@ -110,31 +110,44 @@ describe("MyGovernor", async function () {
   });
 
   it("Can register", async function () {
-    await config.accounts.a.MyGovernor.register(1);
-    await config.accounts.b.MyGovernor.register(2);
-    await config.accounts.c.MyGovernor.register(1);
-    await config.accounts.d.MyGovernor.register(3);
+    // TODO: Change modifier onlyOwner() and used ERC20 to verify.
+    await config.accounts.a.MyGovernor.register(
+      config.location1,
+      config.accounts.a.address
+    );
+    await config.accounts.a.MyGovernor.register(
+      config.location2,
+      config.accounts.b.address
+    );
+    await config.accounts.a.MyGovernor.register(
+      config.location1,
+      config.accounts.c.address
+    );
+    await config.accounts.a.MyGovernor.register(
+      config.location3,
+      config.accounts.d.address
+    );
 
-    const aLocation = await config.accounts.a.MyGovernor.myLocation();
-    const bLocation = await config.accounts.b.MyGovernor.myLocation();
-    const cLocation = await config.accounts.c.MyGovernor.myLocation();
-    const dLocation = await config.accounts.d.MyGovernor.myLocation();
+    const a = await config.accounts.a.MyGovernor.myInfo();
+    const b = await config.accounts.b.MyGovernor.myInfo();
+    const c = await config.accounts.c.MyGovernor.myInfo();
+    const d = await config.accounts.d.MyGovernor.myInfo();
 
-    config.expect(aLocation == config.location1).to.equal(true, "001");
-    config.expect(bLocation == config.location2).to.equal(true, "002");
-    config.expect(cLocation == config.location1).to.equal(true, "003");
-    config.expect(dLocation == config.location3).to.equal(true, "004");
+    config.expect(a.location == config.location1).to.equal(true, "001");
+    config.expect(b.location == config.location2).to.equal(true, "002");
+    config.expect(c.location == config.location1).to.equal(true, "003");
+    config.expect(d.location == config.location3).to.equal(true, "004");
   });
 
   it("Can set location", async function () {
     await config.accounts.b.MyGovernor.setLocation(1);
     await config.accounts.c.MyGovernor.setLocation(2);
 
-    const bLocation = await config.accounts.b.MyGovernor.myLocation();
-    const cLocation = await config.accounts.c.MyGovernor.myLocation();
+    const b = await config.accounts.b.MyGovernor.myInfo();
+    const c = await config.accounts.c.MyGovernor.myInfo();
 
-    config.expect(bLocation == config.location1).to.equal(true, "001");
-    config.expect(cLocation == config.location2).to.equal(true, "002");
+    config.expect(b.location == config.location1).to.equal(true, "001");
+    config.expect(c.location == config.location2).to.equal(true, "002");
   });
 
   it("Check my vote before doing", async function () {
@@ -189,6 +202,19 @@ describe("MyGovernor", async function () {
 
     config.expect(voteReport[0].countScore == 2).to.equal(true, "001");
     config.expect(voteReport[1].countScore == 0).to.equal(true, "002");
+  });
+
+  it("Should not allow voting if member doesn't have the feature for voting", async function () {
+    let allow = true;
+
+    try {
+      await config.accounts.a.MyGovernor.setLocation(config.location3);
+      await config.accounts.a.MyGovernor.vote(2, 0);
+    } catch (err) {
+      allow = false;
+    }
+
+    config.expect(allow == false).to.equal(true, "001");
   });
 
   it("Should not allow voting if member not living in the location", async function () {

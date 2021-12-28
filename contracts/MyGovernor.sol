@@ -4,13 +4,22 @@ pragma solidity ^0.8.2;
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract MyGovernor is Ownable{
-    //TODO: Handle error cases
-    // 50001: error description
+contract MyGovernor is Ownable {
+    // Handle error cases
+    // 50001: Time starts voting is less than the current time.
+    // 50002: Time starts voting is greater than or equal to the end time.
+    // 50003: Not found a snapshot.
+    // 50004: Voting is opening.
+    // 50005: Voting is canceled.
+    // 50006: Not found a candidate.
+    // 50007: Voting ends.
+    // 50008: Member duplicates a vote.
+    // 50009: Member doesn't have the feature for voting.
+
     using Counters for Counters.Counter;
 
     struct Candidate {
-        string ipfsUrl;
+        string ipfsUrl; 
         Counters.Counter countScore;
     }
 
@@ -37,14 +46,18 @@ contract MyGovernor is Ownable{
         bool canceled;
     }
 
-    mapping(uint256 => Snapshot) private snapshotList;
-
-    mapping(address => uint256) private location;
+    struct Member {
+        uint256 location;
+        bool active;
+    }
 
     Counters.Counter private lastSnapshotIndex;
+    mapping(uint256 => Snapshot) private snapshotList;
+    
+    mapping(address => Member) private memberList;
 
     constructor(){}
-    
+
     function isOpenVote(uint256 snapshotIndex) private view returns(bool result) {
         if(snapshotList[snapshotIndex].voteStart <= block.timestamp && 
         snapshotList[snapshotIndex].voteEnd > block.timestamp) {
@@ -52,8 +65,9 @@ contract MyGovernor is Ownable{
         }
     }
 
-    function isLocation(uint256 snapshotIndex, address account) private view returns(bool result) {
-        if(location[account] == snapshotList[snapshotIndex].location) {
+    function isMemberCanVote(uint256 snapshotIndex, address account) private view returns(bool result) {
+        if(memberList[account].location == snapshotList[snapshotIndex].location &&
+        memberList[account].active == true) {
             result = true;
         }
     }
@@ -78,14 +92,14 @@ contract MyGovernor is Ownable{
         result = snapshotList[snapshotIndex].voteList[account].voted;
     }
 
-    function register(uint256 _location) public {
-        //TODO: Verify with ERC20 MFW.
-        location[_msgSender()] = _location;
+    function register(uint256 _location, address account) public onlyOwner {
+        //TODO: Change modifier onlyOwner() and used ERC20 to verify.
+        memberList[account].location = _location;
+        memberList[account].active = true;
     }
 
     function setLocation(uint256 _location) public {
-        //TODO: Verify only member.
-        location[_msgSender()] = _location;
+        memberList[_msgSender()].location = _location;
     }
 
     function createSnapshot(uint256 _voteStart, uint256 _voteEnd, uint256 _location) public onlyOwner {
@@ -108,17 +122,18 @@ contract MyGovernor is Ownable{
     }
 
     function vote(uint256 _snapshotIndex, uint256 _candidateIndex) public {
-        //TODO: This function should allow only members.
+        require(isMemberCanVote(_snapshotIndex, _msgSender()), "50009");
         require(isFoundSnapshot(_snapshotIndex), "50003");
         require(isFoundCandidate(_snapshotIndex,_candidateIndex), "50006");
         require(isOpenVote(_snapshotIndex), "50007");
-        require(isLocation(_snapshotIndex, _msgSender()), "50009");
         require(!isCancelVote(_snapshotIndex), "50005");
         require(!isDuplicateVote(_snapshotIndex, _msgSender()), "50008");
 
         snapshotList[_snapshotIndex].candidateList[_candidateIndex].countScore.increment();
         snapshotList[_snapshotIndex].voteList[_msgSender()].candidateIndex = _candidateIndex;
         snapshotList[_snapshotIndex].voteList[_msgSender()].voted = true;
+
+        memberList[_msgSender()].active = false;
     }
 
     function cancel(uint256 _snapshotIndex) public onlyOwner {
@@ -139,7 +154,7 @@ contract MyGovernor is Ownable{
         });
         return snap;
     }
-    
+
     function voteReport(uint256 _snapshotIndex) public view returns(Candidate[] memory) {
         Candidate[] memory result = new Candidate[](snapshotList[_snapshotIndex].lastCandidateIndex.current());
 
@@ -158,7 +173,7 @@ contract MyGovernor is Ownable{
         return snapshotList[_snapshotIndex].voteList[_msgSender()];
     }
 
-    function myLocation() public view returns(uint256) {
-        return location[_msgSender()];
+    function myInfo() public view returns(Member memory) {
+        return memberList[_msgSender()];
     }
 }

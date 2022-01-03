@@ -6,6 +6,31 @@ describe("MyGovernor", async function () {
     config = global._config;
   });
 
+  it("Should allow owner only to add signer", async function () {
+    let allow = true;
+
+    try {
+      await config.accounts.b.MyGovernor.addSigner(config.accounts.a.address);
+    } catch (err) {
+      allow = false;
+    }
+
+    config.expect(allow == false).to.equal(true, "001");
+  });
+
+  it("Can add a signer", async function () {
+    let allow = true;
+
+    try {
+      await config.accounts.a.MyGovernor.addSigner(config.accounts.a.address);
+      await config.accounts.a.MyGovernor.addSigner(config.accounts.b.address);
+    } catch (err) {
+      allow = false;
+    }
+
+    config.expect(allow == true).to.equal(true, "001");
+  });
+
   it("Can create a snapshot", async function () {
     await config.accounts.a.MyGovernor.createSnapshot(
       config.voteStart,
@@ -109,23 +134,64 @@ describe("MyGovernor", async function () {
     config.expect(allow == false).to.equal(true, "001");
   });
 
+  it("Should not allow registering if invalid signer", async function () {
+    let allow = true;
+
+    try {
+      const signMsg = await config.accounts.c.signMessage(
+        config.accounts.c.address
+      );
+      // console.log(signMsg);
+      await config.accounts.c.MyGovernor.register(
+        signMsg.sig.v,
+        signMsg.sig.r,
+        signMsg.sig.s,
+        config.location1
+      );
+    } catch (err) {
+      allow = false;
+    }
+
+    config.expect(allow == false).to.equal(true, "001");
+  });
+
   it("Can register", async function () {
-    // TODO: Change modifier onlyOwner() and used ERC20 to verify.
-    await config.accounts.a.MyGovernor.register(
-      config.location1,
+    let signMsg = await config.accounts.a.signMessage(
       config.accounts.a.address
     );
+    // console.log(signMsg);
     await config.accounts.a.MyGovernor.register(
-      config.location2,
-      config.accounts.b.address
+      signMsg.sig.v,
+      signMsg.sig.r,
+      signMsg.sig.s,
+      config.location1
     );
-    await config.accounts.a.MyGovernor.register(
-      config.location1,
-      config.accounts.c.address
+
+    signMsg = await config.accounts.b.signMessage(config.accounts.b.address);
+    // console.log(signMsg);
+    await config.accounts.b.MyGovernor.register(
+      signMsg.sig.v,
+      signMsg.sig.r,
+      signMsg.sig.s,
+      config.location2
     );
-    await config.accounts.a.MyGovernor.register(
-      config.location3,
-      config.accounts.d.address
+
+    signMsg = await config.accounts.a.signMessage(config.accounts.c.address);
+    // console.log(signMsg);
+    await config.accounts.c.MyGovernor.register(
+      signMsg.sig.v,
+      signMsg.sig.r,
+      signMsg.sig.s,
+      config.location1
+    );
+
+    signMsg = await config.accounts.b.signMessage(config.accounts.d.address);
+    // console.log(signMsg);
+    await config.accounts.d.MyGovernor.register(
+      signMsg.sig.v,
+      signMsg.sig.r,
+      signMsg.sig.s,
+      config.location3
     );
 
     const a = await config.accounts.a.MyGovernor.myInfo();

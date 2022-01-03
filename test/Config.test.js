@@ -1,3 +1,4 @@
+/* eslint-disable node/no-unsupported-features/es-syntax */
 /* eslint-disable eqeqeq */
 const setting = async function () {
   const hre = require("hardhat");
@@ -18,7 +19,7 @@ const setting = async function () {
   const ipfsUrl = "";
 
   const time = new Date();
-  time.setSeconds(time.getSeconds() + 20);
+  time.setSeconds(time.getSeconds() + 25);
 
   const voteStart = Math.floor(time.getTime() / 1000.0);
   time.setSeconds(time.getSeconds() + 1);
@@ -37,9 +38,67 @@ const setting = async function () {
   const [accountA, accountB, accountC, accountD] =
     await hre.ethers.getSigners();
 
+  const mash = {
+    keccak256: hre.ethers.utils.solidityKeccak256,
+    abi: {
+      encodePacked: hre.ethers.utils.solidityPack,
+    },
+  };
+
+  const signMsg = async (address, signer) => {
+    const hash = mash.keccak256(
+      ["bytes"],
+      [
+        mash.abi.encodePacked(
+          ["string", "address"],
+          ["register(uint256 _location)", address]
+        ),
+      ]
+    );
+
+    const digest = mash.keccak256(
+      ["bytes"],
+      [
+        mash.abi.encodePacked(
+          ["string", "bytes"],
+          ["\x19Ethereum Signed Message:\n32", hash]
+        ),
+      ]
+    );
+
+    const signature = await hre.network.provider.send("eth_sign", [
+      signer,
+      hash,
+    ]);
+
+    const sig = hre.ethers.utils.splitSignature(signature);
+
+    return {
+      address: address,
+      signer: signer,
+      hash: hash,
+      digest: digest,
+      signature: signature,
+      sig: sig,
+    };
+  };
+
+  accountA.signMessage = async (address) => {
+    return signMsg(address, accountA.address);
+  };
+  accountB.signMessage = async (address) => {
+    return signMsg(address, accountB.address);
+  };
+  accountC.signMessage = async (address) => {
+    return signMsg(address, accountC.address);
+  };
+  accountD.signMessage = async (address) => {
+    return signMsg(address, accountD.address);
+  };
+
   const accounts = {
     a: {
-      address: accountA.address,
+      ...accountA,
       MoveForward: new hre.ethers.Contract(
         contracts.MoveForward.address,
         contracts.MoveForward.interface,
@@ -52,7 +111,7 @@ const setting = async function () {
       ),
     },
     b: {
-      address: accountB.address,
+      ...accountB,
       MoveForward: new hre.ethers.Contract(
         contracts.MoveForward.address,
         contracts.MoveForward.interface,
@@ -65,7 +124,7 @@ const setting = async function () {
       ),
     },
     c: {
-      address: accountC.address,
+      ...accountC,
       MoveForward: new hre.ethers.Contract(
         contracts.MoveForward.address,
         contracts.MoveForward.interface,
@@ -78,7 +137,7 @@ const setting = async function () {
       ),
     },
     d: {
-      address: accountD.address,
+      ...accountD,
       MoveForward: new hre.ethers.Contract(
         contracts.MoveForward.address,
         contracts.MoveForward.interface,

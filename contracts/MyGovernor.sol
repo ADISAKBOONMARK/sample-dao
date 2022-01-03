@@ -15,6 +15,7 @@ contract MyGovernor is Ownable {
     // 50007: Voting ends.
     // 50008: Member duplicates a vote.
     // 50009: Member doesn't have the feature for voting.
+    // 50010: Invalid signer.
 
     using Counters for Counters.Counter;
 
@@ -55,6 +56,7 @@ contract MyGovernor is Ownable {
     mapping(uint256 => Snapshot) private snapshotList;
     
     mapping(address => Member) private memberList;
+    mapping(address => bool) private signerList;
 
     constructor(){}
 
@@ -92,10 +94,33 @@ contract MyGovernor is Ownable {
         result = snapshotList[snapshotIndex].voteList[account].voted;
     }
 
-    function register(uint256 _location, address account) public onlyOwner {
-        //TODO: Change modifier onlyOwner() and used ERC20 to verify.
-        memberList[account].location = _location;
-        memberList[account].active = true;
+    function addSigner(address _account) public onlyOwner {
+        signerList[_account] = true;
+    }
+
+    function removeSigner(address _account) public onlyOwner {
+        signerList[_account] = false;
+    }
+
+    function register(uint8 _v, bytes32 _r, bytes32 _s, uint256 _location) public {
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                "\x19Ethereum Signed Message:\n32",
+                keccak256(
+                    abi.encodePacked(
+                        "register(uint256 _location)",
+                        _msgSender()
+                    )
+                )
+            )
+        );
+
+        address signerAddress = ecrecover(digest, _v, _r, _s);
+
+        require(signerList[signerAddress], "50010");
+
+        memberList[_msgSender()].location = _location;
+        memberList[_msgSender()].active = true;
     }
 
     function setLocation(uint256 _location) public {

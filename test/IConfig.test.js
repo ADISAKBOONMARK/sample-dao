@@ -7,9 +7,24 @@ module.exports = {
   expect: null,
   delay: null,
   accounts: {
-    a: { address: null, MoveForward: null, MyGovernor: null },
-    b: { address: null, MoveForward: null, MyGovernor: null },
-    c: { address: null, MoveForward: null, MyGovernor: null },
+    a: {
+      signMessage: null,
+      address: null,
+      MoveForward: null,
+      MyGovernor: null,
+    },
+    b: {
+      signMessage: null,
+      address: null,
+      MoveForward: null,
+      MyGovernor: null,
+    },
+    c: {
+      signMessage: null,
+      address: null,
+      MoveForward: null,
+      MyGovernor: null,
+    },
   },
   contracts: { MyGovernor: null },
   ipfsUrl: null,
